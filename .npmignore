@@ -1,0 +1,8 @@
+src/
+tsconfig.json
+.memory/
+*.ts
+!dist/**
+.claude/
+.git/
+.gitignore
