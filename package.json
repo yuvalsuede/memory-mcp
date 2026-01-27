@@ -1,6 +1,6 @@
 {
   "name": "claude-code-memory",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Persistent memory for Claude Code — never lose context between sessions",
   "main": "dist/index.js",
   "bin": {
