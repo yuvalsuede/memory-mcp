@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.yuvalsuede/memory-mcp",
+  "description": "Persistent memory for Claude Code — never lose context between sessions. Silent auto-capture via hooks, Haiku-powered extraction, smart dedup, and mid-session recall.",
+  "repository": {
+    "url": "https://github.com/yuvalsuede/memory-mcp",
+    "source": "github"
+  },
+  "version": "1.0.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "claude-code-memory",
+      "version": "1.0.2",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
