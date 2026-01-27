@@ -39,11 +39,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/suede/memory-mcp.git"
+    "url": "git+https://github.com/yuvalsuede/memory-mcp.git"
   },
-  "homepage": "https://github.com/suede/memory-mcp#readme",
+  "homepage": "https://github.com/yuvalsuede/memory-mcp#readme",
   "bugs": {
-    "url": "https://github.com/suede/memory-mcp/issues"
+    "url": "https://github.com/yuvalsuede/memory-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
