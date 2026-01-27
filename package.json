@@ -1,5 +1,5 @@
 {
-  "name": "memory-mcp",
+  "name": "claude-memory-mcp",
   "version": "1.0.0",
   "description": "Persistent memory for Claude Code — never lose context between sessions",
   "main": "dist/index.js",
