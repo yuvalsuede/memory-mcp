@@ -54,27 +54,35 @@ function summarizeTranscriptLines(lines: string[]): string {
   for (const line of lines) {
     try {
       const entry = JSON.parse(line);
+      const msg = entry.message || {};
+      const content = msg.content;
 
-      if (entry.type === "human" || entry.role === "user") {
-        const text = extractText(entry);
+      if (entry.type === "user") {
+        const text = typeof content === "string" ? content : extractTextFromBlocks(content);
         if (text) events.push(`USER: ${text.slice(0, 500)}`);
-      } else if (entry.type === "assistant" || entry.role === "assistant") {
-        const text = extractText(entry);
+      } else if (entry.type === "assistant") {
+        // Extract text blocks
+        const text = extractTextFromBlocks(content);
         if (text) events.push(`CLAUDE: ${text.slice(0, 500)}`);
-      }
 
-      if (entry.tool_name || entry.type === "tool_use") {
-        const name = entry.tool_name || entry.name || "unknown";
-        const input = entry.tool_input || entry.input || {};
+        // Extract tool_use blocks
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (block.type === "tool_use") {
+              const name = block.name || "unknown";
+              const input = block.input || {};
 
-        if (name === "Write" || name === "Edit") {
-          events.push(`TOOL [${name}]: ${input.file_path || "unknown file"}`);
-        } else if (name === "Bash") {
-          events.push(`TOOL [Bash]: ${(input.command || "").slice(0, 200)}`);
-        } else if (name === "Read") {
-          events.push(`TOOL [Read]: ${input.file_path || "unknown"}`);
-        } else {
-          events.push(`TOOL [${name}]`);
+              if (name === "Write" || name === "Edit") {
+                events.push(`TOOL [${name}]: ${input.file_path || "unknown file"}`);
+              } else if (name === "Bash") {
+                events.push(`TOOL [Bash]: ${(input.command || "").slice(0, 200)}`);
+              } else if (name === "Read") {
+                events.push(`TOOL [Read]: ${input.file_path || "unknown"}`);
+              } else {
+                events.push(`TOOL [${name}]`);
+              }
+            }
+          }
         }
       }
     } catch {
@@ -85,15 +93,14 @@ function summarizeTranscriptLines(lines: string[]): string {
   return events.join("\n");
 }
 
-function extractText(entry: any): string {
-  if (typeof entry.content === "string") return entry.content;
-  if (Array.isArray(entry.content)) {
-    return entry.content
+function extractTextFromBlocks(content: any): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
       .filter((b: any) => b.type === "text")
       .map((b: any) => b.text)
       .join(" ");
   }
-  if (entry.message?.content) return extractText(entry.message);
   return "";
 }
 

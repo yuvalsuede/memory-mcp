@@ -43,7 +43,7 @@ export async function callHaiku(prompt: string, maxTokens: number = 1024): Promi
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-20250414",
+      model: "claude-3-5-haiku-20241022",
       max_tokens: maxTokens,
       messages: [{ role: "user", content: prompt }],
     }),
