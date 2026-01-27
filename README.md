@@ -19,6 +19,51 @@ No commands to run. No "remember this". It just works.
 
 ## How It Works
 
+```mermaid
+graph TB
+    subgraph "Phase 1: Silent Capture"
+        A[Claude Code Session] -->|User sends message| B[Claude responds]
+        B -->|Hook fires: Stop/PreCompact/SessionEnd| C[extractor.js]
+        C --> D[Read transcript from cursor]
+        D --> E[Chunk if >6000 chars]
+        E --> F[Send to Haiku LLM]
+        F -->|Extract memories as JSON| G[Dedup via Jaccard similarity]
+        G --> H[Save to .memory/state.json]
+        H --> I[Decay confidence scores]
+        I --> J{Consolidation needed?}
+        J -->|>80 memories or every 10 extractions| K[Haiku merges/drops]
+        J -->|No| L[Sync CLAUDE.md]
+        K --> L
+    end
+
+    subgraph "Phase 2: Recovery"
+        M[New session starts] -->|Built-in behavior| N[Claude reads CLAUDE.md]
+        N --> O[Claude has full project context]
+    end
+
+    subgraph "Phase 3: Deep Recall"
+        O --> P{Need specific context?}
+        P -->|memory_search| Q[Keyword search across memories]
+        P -->|memory_ask| R[Haiku synthesizes answer from top 30 matches]
+        P -->|memory_related| S[Tag-based retrieval]
+    end
+
+    subgraph "Data Store"
+        H -.-> T[(.memory/state.json<br/>Full memory store)]
+        L -.-> U[(CLAUDE.md<br/>~150 line summary)]
+        T -.->|MCP tools read| Q
+        T -.->|MCP tools read| R
+        T -.->|MCP tools read| S
+    end
+
+    style A fill:#4a9eff,color:#fff
+    style F fill:#ff6b6b,color:#fff
+    style K fill:#ff6b6b,color:#fff
+    style R fill:#ff6b6b,color:#fff
+    style T fill:#ffd93d,color:#000
+    style U fill:#6bcb77,color:#000
+```
+
 **Two-tier memory architecture:**
 
 | Layer | Purpose | Size |

@@ -1,0 +1,254 @@
+{
+  "type": "hosted",
+  "stateful": false,
+  "serverCard": {
+    "serverInfo": {
+      "name": "memory-mcp",
+      "version": "2.0.0"
+    },
+    "tools": [
+      {
+        "name": "memory_init",
+        "description": "Initialize project memory with name and description.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Project name"
+            },
+            "description": {
+              "type": "string",
+              "description": "Brief project description"
+            }
+          },
+          "required": [
+            "name",
+            "description"
+          ],
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_save",
+        "description": "Save a memory about this project. Records decisions, patterns, architecture, gotchas, progress, or context for future sessions.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "decision",
+                "pattern",
+                "gotcha",
+                "architecture",
+                "progress",
+                "context"
+              ],
+              "description": "Memory type: decision (why X over Y), pattern (conventions), gotcha (pitfalls), architecture (system structure), progress (what's done/in-flight), context (business context)"
+            },
+            "content": {
+              "type": "string",
+              "description": "The memory — be specific and concise"
+            },
+            "tags": {
+              "description": "Tags for categorization",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "supersedes": {
+              "description": "ID of memory this replaces",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "content"
+          ],
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_recall",
+        "description": "Recall all active memories, optionally filtered by type or tags.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "decision",
+                "pattern",
+                "gotcha",
+                "architecture",
+                "progress",
+                "context"
+              ],
+              "description": "Memory type: decision (why X over Y), pattern (conventions), gotcha (pitfalls), architecture (system structure), progress (what's done/in-flight), context (business context)"
+            },
+            "tags": {
+              "description": "Filter by tags",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_delete",
+        "description": "Delete a specific memory by ID.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Memory ID to delete"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_search",
+        "description": "Search memories by keyword. Returns ranked results matching the query across content and tags.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search query (keywords)"
+            },
+            "limit": {
+              "description": "Max results (default 20)",
+              "type": "number"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_related",
+        "description": "Get all memories related to specific tags/areas. Use to explore a topic in depth.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Tags to search for"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "decision",
+                "pattern",
+                "gotcha",
+                "architecture",
+                "progress",
+                "context"
+              ],
+              "description": "Memory type: decision (why X over Y), pattern (conventions), gotcha (pitfalls), architecture (system structure), progress (what's done/in-flight), context (business context)"
+            }
+          },
+          "required": [
+            "tags"
+          ],
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_ask",
+        "description": "Ask a question and get an answer synthesized from project memories. Like RAG over your project knowledge.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "question": {
+              "type": "string",
+              "description": "Question about the project"
+            }
+          },
+          "required": [
+            "question"
+          ],
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_consolidate",
+        "description": "Manually trigger memory consolidation. Merges duplicates, removes outdated memories, keeps memory sharp.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_consciousness",
+        "description": "Generate the full consciousness document. This is what gets written to CLAUDE.md.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      },
+      {
+        "name": "memory_stats",
+        "description": "Show memory statistics: counts by type, active/archived/superseded, last consolidation.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "execution": {
+          "taskSupport": "forbidden"
+        }
+      }
+    ],
+    "resources": [],
+    "prompts": []
+  },
+  "source": {
+    "commit": "76cab6178d960f8db17674b36b40e1d18d4c8ad4",
+    "branch": "main"
+  }
+}

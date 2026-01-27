@@ -4,6 +4,7 @@
   "mcpName": "io.github.yuvalsuede/memory-mcp",
   "description": "Persistent memory for Claude Code — never lose context between sessions",
   "main": "dist/index.js",
+  "module": "./src/index.ts",
   "bin": {
     "memory-mcp": "dist/cli.js"
   },
