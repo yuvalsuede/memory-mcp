@@ -93,7 +93,7 @@ Claude Code hooks fire after every response (`Stop`), before context compaction 
 
 ```bash
 # Install globally
-npm install -g memory-mcp
+npm install -g claude-code-memory
 
 # Interactive setup (API key + hooks)
 memory-mcp setup
