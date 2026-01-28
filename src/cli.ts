@@ -582,6 +582,34 @@ async function cmdSnapshotRestore(hash: string, projectDir?: string) {
   }
 }
 
+async function cmdSnapshotEnable(projectDir?: string) {
+  const absDir = path.resolve(projectDir || ".");
+  const memDir = path.join(absDir, ".memory");
+
+  if (!fs.existsSync(memDir)) {
+    err("No .memory directory found. Run 'memory-mcp init' first.");
+    return;
+  }
+
+  const store = new MemoryStore(absDir);
+  await setupGitSnapshots(absDir, store);
+}
+
+async function cmdSnapshotDisable(projectDir?: string) {
+  const absDir = path.resolve(projectDir || ".");
+  const store = new MemoryStore(absDir);
+  const config = store.getSnapshotConfig();
+
+  if (!config?.enabled) {
+    skip("Snapshots already disabled");
+    return;
+  }
+
+  store.setSnapshotConfig({ ...config, enabled: false });
+  ok("Git snapshots disabled");
+  console.log(`  ${c.dim}Existing snapshots on branch '${config.branch}' are preserved.${c.reset}\n`);
+}
+
 // --- Help ---
 
 function printHelp() {
@@ -600,6 +628,8 @@ ${c.bold}COMMANDS${c.reset}
   ${c.cyan}consolidate${c.reset} [dir]       Merge duplicates, prune stale memories
   ${c.cyan}key${c.reset} [api-key]           Set or check Anthropic API key
   ${c.cyan}snapshots${c.reset} [dir]         List git snapshot history
+  ${c.cyan}snapshot-enable${c.reset} [dir]   Enable git snapshots (after git init)
+  ${c.cyan}snapshot-disable${c.reset} [dir]  Disable git snapshots
   ${c.cyan}snapshot-diff${c.reset} <h1> <h2> Compare two snapshots
   ${c.cyan}snapshot-restore${c.reset} <hash> Restore project to a snapshot
   ${c.cyan}help${c.reset}                    Show this help
@@ -655,6 +685,10 @@ async function main() {
       return cmdKey(args[1]);
     case "snapshots":
       return cmdSnapshots(args[1]);
+    case "snapshot-enable":
+      return cmdSnapshotEnable(args[1]);
+    case "snapshot-disable":
+      return cmdSnapshotDisable(args[1]);
     case "snapshot-diff":
       if (!args[1] || !args[2]) { err("Usage: memory-mcp snapshot-diff <hash1> <hash2>"); process.exit(1); }
       return cmdSnapshotDiff(args[1], args[2], args[3]);
