@@ -12,6 +12,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { MemoryStore } from "./store";
 import { callHaiku, buildExtractionPrompt, buildConsolidationPrompt } from "./llm";
+import { createSnapshot, generateCommitMessage } from "./git-snapshot";
 
 interface HookInput {
   session_id: string;
@@ -317,6 +318,18 @@ async function main() {
 
       // Sync CLAUDE.md
       syncClaudeMd(cwd, store);
+
+      // Create git snapshot if enabled
+      const snapshotConfig = store.getSnapshotConfig();
+      if (snapshotConfig?.enabled) {
+        const memoryTypes = extracted.map((m) => m.type);
+        const commitMessage = generateCommitMessage(
+          extracted.length,
+          memoryTypes,
+          event
+        );
+        await createSnapshot(cwd, snapshotConfig, commitMessage);
+      }
     } finally {
       store.releaseLock();
     }

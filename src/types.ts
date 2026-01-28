@@ -13,6 +13,12 @@ export interface Memory {
 
 export type MemoryType = Memory["type"];
 
+export interface SnapshotConfig {
+  enabled: boolean;
+  remote?: string;          // e.g., "origin"
+  branch: string;           // e.g., "__memory-snapshots"
+}
+
 export interface ProjectState {
   version: number;          // schema version for future migrations
   project: string;
@@ -21,6 +27,7 @@ export interface ProjectState {
   lastUpdated: string;
   lastConsolidation?: string;
   extractionCount: number;
+  snapshot?: SnapshotConfig; // git snapshot configuration
 }
 
 export interface ConsolidationResult {

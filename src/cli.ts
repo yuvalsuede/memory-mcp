@@ -5,6 +5,7 @@ import * as path from "path";
 import * as readline from "readline";
 import { MemoryStore } from "./store";
 import { callHaiku, buildAskPrompt, buildConsolidationPrompt } from "./llm";
+import { isGitRepo, remoteExists, listSnapshots, diffSnapshots, restoreSnapshot } from "./git-snapshot";
 
 // --- Colors (no dependencies) ---
 
@@ -185,6 +186,72 @@ ${c.bold}${c.magenta}  memory-mcp${c.reset} ${c.dim}— persistent memory for Cl
 `);
 }
 
+async function setupGitSnapshots(absDir: string, store: MemoryStore): Promise<void> {
+  heading("Step: Git Snapshots (automatic versioning)");
+
+  // Check if already configured
+  const existingConfig = store.getSnapshotConfig();
+  if (existingConfig?.enabled) {
+    skip(`Git snapshots already enabled (branch: ${existingConfig.branch}, remote: ${existingConfig.remote || "local only"})`);
+    return;
+  }
+
+  // Check if this is a git repo
+  if (!isGitRepo(absDir)) {
+    skip("Not a git repository - skipping git snapshots");
+    console.log(`  ${c.dim}Initialize git to enable automatic project versioning.${c.reset}`);
+    return;
+  }
+
+  console.log(`  Git snapshots create automatic commits of your entire project`);
+  console.log(`  on a hidden branch after each memory extraction.`);
+  console.log(`  This gives you full project history tied to your working sessions.\n`);
+
+  const enableSnapshots = await confirm("Enable git snapshots?");
+  if (!enableSnapshots) {
+    skip("Git snapshots disabled");
+    store.setSnapshotConfig({ enabled: false, branch: "__memory-snapshots" });
+    return;
+  }
+
+  // Ask for remote
+  let remote: string | undefined;
+  const hasOrigin = remoteExists(absDir, "origin");
+
+  if (hasOrigin) {
+    const useOrigin = await confirm("Push snapshots to 'origin' remote?");
+    if (useOrigin) {
+      remote = "origin";
+    } else {
+      const customRemote = await ask("Remote name (or leave empty for local only):");
+      if (customRemote && remoteExists(absDir, customRemote)) {
+        remote = customRemote;
+      } else if (customRemote) {
+        warn(`Remote '${customRemote}' not found - using local only`);
+      }
+    }
+  } else {
+    console.log(`  ${c.dim}No 'origin' remote found. Snapshots will be local only.${c.reset}`);
+    const customRemote = await ask("Remote name (or leave empty for local only):");
+    if (customRemote && remoteExists(absDir, customRemote)) {
+      remote = customRemote;
+    }
+  }
+
+  // Save config
+  const config = {
+    enabled: true,
+    branch: "__memory-snapshots",
+    remote,
+  };
+  store.setSnapshotConfig(config);
+
+  ok(`Git snapshots enabled`);
+  console.log(`  ${c.cyan}Branch:${c.reset} ${config.branch}`);
+  console.log(`  ${c.cyan}Remote:${c.reset} ${remote || "local only"}`);
+  console.log(`  ${c.dim}Every memory save will commit your project state.${c.reset}`);
+}
+
 async function cmdInit(projectDir?: string) {
   const absDir = path.resolve(projectDir || ".");
   if (!fs.existsSync(absDir)) {
@@ -226,6 +293,9 @@ async function cmdInit(projectDir?: string) {
   } else {
     skip(`Project already named: ${state.project}`);
   }
+
+  // Git snapshots
+  await setupGitSnapshots(absDir, store);
 
   console.log(`
   ${c.green}Done!${c.reset} MCP tools available next time Claude Code starts.
@@ -446,6 +516,72 @@ async function cmdKey(key?: string) {
   }
 }
 
+// --- Snapshot Commands ---
+
+async function cmdSnapshots(projectDir?: string) {
+  const absDir = path.resolve(projectDir || ".");
+  const store = new MemoryStore(absDir);
+  const config = store.getSnapshotConfig();
+
+  heading("Git Snapshots");
+
+  if (!config?.enabled) {
+    console.log(`  ${c.yellow}Snapshots not enabled for this project.${c.reset}`);
+    console.log(`  Run ${c.bold}memory-mcp init${c.reset} to enable.\n`);
+    return;
+  }
+
+  console.log(`  ${c.bold}Branch:${c.reset} ${config.branch}`);
+  console.log(`  ${c.bold}Remote:${c.reset} ${config.remote || "local only"}\n`);
+
+  const snapshots = listSnapshots(absDir, config.branch, 15);
+
+  if (snapshots.length === 0) {
+    console.log(`  ${c.dim}No snapshots yet. They'll be created after memory extractions.${c.reset}\n`);
+    return;
+  }
+
+  console.log(`  ${c.bold}Recent snapshots:${c.reset}\n`);
+  for (const snap of snapshots) {
+    const shortHash = snap.hash.slice(0, 7);
+    const date = snap.date.split(" ")[0];
+    console.log(`  ${c.cyan}${shortHash}${c.reset} ${date} ${c.dim}${snap.message}${c.reset}`);
+  }
+
+  console.log(`\n  ${c.dim}Use 'memory-mcp snapshot-diff <hash1> <hash2>' to compare versions.${c.reset}`);
+  console.log(`  ${c.dim}Use 'memory-mcp snapshot-restore <hash>' to restore a version.${c.reset}\n`);
+}
+
+async function cmdSnapshotDiff(hash1: string, hash2: string, projectDir?: string) {
+  const absDir = path.resolve(projectDir || ".");
+
+  heading(`Diff: ${hash1.slice(0, 7)} → ${hash2.slice(0, 7)}`);
+
+  const diff = diffSnapshots(absDir, hash1, hash2);
+  console.log(diff);
+}
+
+async function cmdSnapshotRestore(hash: string, projectDir?: string) {
+  const absDir = path.resolve(projectDir || ".");
+
+  console.log(`\n  ${c.yellow}Warning:${c.reset} This will overwrite your current project files`);
+  console.log(`  with the state from snapshot ${c.cyan}${hash.slice(0, 7)}${c.reset}.\n`);
+
+  const confirmed = await confirm("Continue?");
+  if (!confirmed) {
+    console.log("  Cancelled.\n");
+    return;
+  }
+
+  const result = restoreSnapshot(absDir, hash);
+  if (result.success) {
+    ok(`Restored project to snapshot ${hash.slice(0, 7)}`);
+    console.log(`  ${c.dim}Files have been updated. Review changes with 'git status'.${c.reset}\n`);
+  } else {
+    err(`Failed to restore: ${result.error}`);
+  }
+}
+
 // --- Help ---
 
 function printHelp() {
@@ -463,6 +599,9 @@ ${c.bold}COMMANDS${c.reset}
   ${c.cyan}ask${c.reset} <question> [dir]    Ask a question, get answer from memory
   ${c.cyan}consolidate${c.reset} [dir]       Merge duplicates, prune stale memories
   ${c.cyan}key${c.reset} [api-key]           Set or check Anthropic API key
+  ${c.cyan}snapshots${c.reset} [dir]         List git snapshot history
+  ${c.cyan}snapshot-diff${c.reset} <h1> <h2> Compare two snapshots
+  ${c.cyan}snapshot-restore${c.reset} <hash> Restore project to a snapshot
   ${c.cyan}help${c.reset}                    Show this help
 
 ${c.bold}EXAMPLES${c.reset}
@@ -514,6 +653,14 @@ async function main() {
       return cmdConsolidate(args[1]);
     case "key":
       return cmdKey(args[1]);
+    case "snapshots":
+      return cmdSnapshots(args[1]);
+    case "snapshot-diff":
+      if (!args[1] || !args[2]) { err("Usage: memory-mcp snapshot-diff <hash1> <hash2>"); process.exit(1); }
+      return cmdSnapshotDiff(args[1], args[2], args[3]);
+    case "snapshot-restore":
+      if (!args[1]) { err("Usage: memory-mcp snapshot-restore <hash>"); process.exit(1); }
+      return cmdSnapshotRestore(args[1], args[2]);
     case "help":
     case "--help":
     case "-h":

@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { Memory, MemoryType, ProjectState } from "./types";
+import { Memory, MemoryType, ProjectState, SnapshotConfig } from "./types";
 
 const STOP_WORDS = new Set([
   "the", "a", "an", "is", "are", "was", "were", "using", "with", "for",
@@ -153,6 +153,15 @@ export class MemoryStore {
     this.state.project = name;
     this.state.description = description;
     this.save();
+  }
+
+  setSnapshotConfig(config: SnapshotConfig): void {
+    this.state.snapshot = config;
+    this.save();
+  }
+
+  getSnapshotConfig(): SnapshotConfig | undefined {
+    return this.state.snapshot;
   }
 
   incrementExtractionCount(): number {
