@@ -369,6 +369,23 @@ async function cmdStatus(projectDir?: string) {
     console.log(`  ${c.bold}Extractions:${c.reset} ${state.extractionCount}`);
     console.log(`  ${c.bold}Last update:${c.reset} ${state.lastUpdated}`);
     console.log(`  ${c.bold}Last consolidation:${c.reset} ${state.lastConsolidation || "never"}`);
+
+    // Snapshot stats
+    const snapshotConfig = store.getSnapshotConfig();
+    if (snapshotConfig?.enabled) {
+      const snapshots = listSnapshots(absDir, snapshotConfig.branch);
+      console.log("");
+      console.log(`  ${c.bold}Git Snapshots:${c.reset} ${c.green}enabled${c.reset}`);
+      console.log(`  ${c.bold}Branch:${c.reset}     ${snapshotConfig.branch}`);
+      console.log(`  ${c.bold}Remote:${c.reset}     ${snapshotConfig.remote || "local only"}`);
+      console.log(`  ${c.bold}Commits:${c.reset}    ${c.cyan}${snapshots.length}${c.reset} snapshots`);
+    } else if (snapshotConfig) {
+      console.log("");
+      console.log(`  ${c.bold}Git Snapshots:${c.reset} ${c.yellow}disabled${c.reset}`);
+    } else if (isGitRepo(absDir)) {
+      console.log("");
+      console.log(`  ${c.bold}Git Snapshots:${c.reset} ${c.dim}not configured${c.reset} (run ${c.bold}memory-mcp snapshot-enable${c.reset})`);
+    }
   }
 
   if (!hasMemDir || !hasHooks || !hasKey) {
