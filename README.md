@@ -104,6 +104,20 @@ memory-mcp init ~/Projects/my-app
 
 That's it. Start a Claude Code session and memories will begin accumulating automatically.
 
+## Updating
+
+To update an existing installation:
+
+```bash
+npm install -g claude-code-memory --force
+```
+
+To update hooks (e.g., after a bug fix):
+
+```bash
+memory-mcp setup
+```
+
 ## Requirements
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code)
@@ -160,6 +174,41 @@ Context Dashboard
 ```
 
 Use `memory-mcp context --html` to generate an interactive browser dashboard.
+
+## Git Snapshots
+
+Automatic project versioning tied to your working sessions. Every memory extraction commits your entire project to a hidden branch.
+
+```bash
+# Enable during init (you'll be prompted)
+memory-mcp init ~/Projects/my-app
+
+# Or enable later
+memory-mcp snapshot-enable
+
+# View snapshot history
+memory-mcp snapshots
+
+# Compare two snapshots
+memory-mcp snapshot-diff abc123 def456
+
+# Restore to a previous state
+memory-mcp snapshot-restore abc123
+
+# Disable (preserves existing snapshots)
+memory-mcp snapshot-disable
+```
+
+**How it works:**
+- Commits go to `__memory-snapshots` branch (invisible in normal workflow)
+- Optional push to remote (e.g., origin)
+- Commit messages include what memories were extracted
+- Full project state captured, not just memory files
+
+**Use cases:**
+- Roll back after breaking changes
+- See what your project looked like during a specific session
+- Track project evolution alongside context evolution
 
 ## MCP Tools (used by Claude mid-conversation)
 
