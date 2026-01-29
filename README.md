@@ -1,21 +1,49 @@
 # memory-mcp
 
-Persistent memory for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Never lose context between sessions again.
+[![npm version](https://img.shields.io/npm/v/claude-code-memory.svg)](https://www.npmjs.com/package/claude-code-memory)
+[![npm downloads](https://img.shields.io/npm/dm/claude-code-memory.svg)](https://www.npmjs.com/package/claude-code-memory)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue.svg)](tsconfig.json)
 
-## The Problem
-
-Every few days, you start a new Claude Code session and have to re-explain your project — the architecture, the decisions you made, the patterns you follow, the gotchas you discovered. All that context is gone.
-
-## The Solution
-
-`memory-mcp` silently captures what matters during your sessions and makes it available to every future session — automatically.
+**Persistent memory + automatic git snapshots for Claude Code.** Never lose context. Never lose code.
 
 ```
-Session 1: Claude works → hooks silently extract memories → saved
-Session 2: Claude starts → reads CLAUDE.md → instantly knows everything
+🧠 45 memories | 📊 2.8K tokens | 📸 23 snapshots | ⏱️ 5m ago
 ```
 
-No commands to run. No "remember this". It just works.
+## Why memory-mcp?
+
+| Problem | Solution |
+|---------|----------|
+| Re-explaining your project every session | Auto-captures decisions, patterns, architecture |
+| Context window fills up, knowledge lost | Two-tier memory: CLAUDE.md (instant) + deep search |
+| Broke something, can't remember what worked | Git snapshots on every save, instant rollback |
+| No idea what Claude "knows" about your project | Visual dashboard shows all context |
+| Worried about cloud storage | 100% local files, your git repo |
+
+## What makes it different
+
+- **Git Snapshots** — Every memory save commits your entire project. Roll back anytime.
+- **Two-Tier Memory** — CLAUDE.md loads instantly, deep store searchable mid-conversation.
+- **LLM-Powered** — Haiku extracts what matters, consolidates duplicates, prunes stale info.
+- **Visual Dashboard** — See your context: tokens, memories by type, snapshot history.
+- **Zero friction** — No commands to run. It just works silently.
+
+## Quick Start
+
+```bash
+# Install globally
+npm install -g claude-code-memory
+
+# Interactive setup (API key + hooks)
+memory-mcp setup
+
+# Initialize a project
+memory-mcp init ~/Projects/my-app
+```
+
+That's it. Start coding. Memories accumulate automatically.
 
 ## How It Works
 
@@ -89,21 +117,6 @@ Claude Code hooks fire after every response (`Stop`), before context compaction 
 - LLM-powered consolidation (merges overlapping memories, prunes stale ones)
 - Line-budgeted CLAUDE.md (stays under ~150 lines, most important first)
 
-## Quick Start
-
-```bash
-# Install globally
-npm install -g claude-code-memory
-
-# Interactive setup (API key + hooks)
-memory-mcp setup
-
-# Initialize a project
-memory-mcp init ~/Projects/my-app
-```
-
-That's it. Start a Claude Code session and memories will begin accumulating automatically.
-
 ## Updating
 
 To update an existing installation:
@@ -130,6 +143,7 @@ memory-mcp setup
 memory-mcp setup              Interactive first-time setup
 memory-mcp init [dir]          Initialize memory for a project
 memory-mcp status [dir]        Show memory status and health
+memory-mcp statusline [dir]    Compact one-line status (great for shell prompts)
 memory-mcp context [dir]       Show context metrics and token usage
 memory-mcp context --html      Generate visual HTML dashboard
 memory-mcp search <query>      Search memories by keyword

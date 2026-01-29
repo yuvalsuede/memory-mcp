@@ -629,6 +629,59 @@ async function cmdSnapshotDisable(projectDir?: string) {
   console.log(`  ${c.dim}Existing snapshots on branch '${config.branch}' are preserved.${c.reset}\n`);
 }
 
+// --- Statusline Command ---
+
+function cmdStatusline(projectDir?: string) {
+  const absDir = path.resolve(projectDir || ".");
+  const memDir = path.join(absDir, ".memory");
+  const statePath = path.join(memDir, "state.json");
+
+  if (!fs.existsSync(statePath)) {
+    console.log("🧠 memory-mcp: not initialized");
+    return;
+  }
+
+  const store = new MemoryStore(absDir);
+  const counts = store.getAllMemoryCount();
+  const metrics = getContextMetrics(absDir);
+  const config = store.getSnapshotConfig();
+
+  // Build compact statusline
+  const parts: string[] = [];
+
+  // Memory count
+  parts.push(`🧠 ${counts.active} memories`);
+
+  // Token estimate
+  parts.push(`📊 ${formatTokens(metrics.summary.totalTokens)} tokens`);
+
+  // Snapshot count if enabled
+  if (config?.enabled && metrics.snapshots.totalCommits > 0) {
+    parts.push(`📸 ${metrics.snapshots.totalCommits} snapshots`);
+  }
+
+  // Last updated (relative time)
+  const state = store.getState();
+  if (state.lastUpdated) {
+    const lastDate = new Date(state.lastUpdated);
+    const now = new Date();
+    const diffMs = now.getTime() - lastDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    let relative: string;
+    if (diffMins < 1) relative = "just now";
+    else if (diffMins < 60) relative = `${diffMins}m ago`;
+    else if (diffHours < 24) relative = `${diffHours}h ago`;
+    else relative = `${diffDays}d ago`;
+
+    parts.push(`⏱️ ${relative}`);
+  }
+
+  console.log(parts.join(" | "));
+}
+
 // --- Context Command ---
 
 async function cmdContext(projectDir?: string, options?: { html?: boolean; open?: boolean }) {
@@ -731,6 +784,7 @@ ${c.bold}COMMANDS${c.reset}
   ${c.cyan}consolidate${c.reset} [dir]       Merge duplicates, prune stale memories
   ${c.cyan}key${c.reset} [api-key]           Set or check Anthropic API key
   ${c.cyan}context${c.reset} [dir] [--html]  Show context metrics and token usage
+  ${c.cyan}statusline${c.reset} [dir]         Show compact one-line status (for prompts)
   ${c.cyan}snapshots${c.reset} [dir]         List git snapshot history
   ${c.cyan}snapshot-enable${c.reset} [dir]   Enable git snapshots (after git init)
   ${c.cyan}snapshot-disable${c.reset} [dir]  Disable git snapshots
@@ -792,6 +846,8 @@ async function main() {
       const openFlag = args.includes("--open");
       const contextDir = args.find(a => !a.startsWith("--") && a !== "context");
       return cmdContext(contextDir, { html: htmlFlag, open: openFlag });
+    case "statusline":
+      return cmdStatusline(args[1]);
     case "snapshots":
       return cmdSnapshots(args[1]);
     case "snapshot-enable":
