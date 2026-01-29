@@ -6,6 +6,7 @@ import * as readline from "readline";
 import { MemoryStore } from "./store";
 import { callHaiku, buildAskPrompt, buildConsolidationPrompt } from "./llm";
 import { isGitRepo, remoteExists, listSnapshots, diffSnapshots, restoreSnapshot } from "./git-snapshot";
+import { getContextMetrics, asciiBar, formatTokens, generateHtmlDashboard } from "./context";
 
 // --- Colors (no dependencies) ---
 
@@ -628,6 +629,90 @@ async function cmdSnapshotDisable(projectDir?: string) {
   console.log(`  ${c.dim}Existing snapshots on branch '${config.branch}' are preserved.${c.reset}\n`);
 }
 
+// --- Context Command ---
+
+async function cmdContext(projectDir?: string, options?: { html?: boolean; open?: boolean }) {
+  const absDir = path.resolve(projectDir || ".");
+  const metrics = getContextMetrics(absDir);
+
+  if (options?.html) {
+    // Generate HTML dashboard
+    const html = generateHtmlDashboard(absDir, metrics);
+    const outputPath = path.join(absDir, ".memory", "dashboard.html");
+
+    if (!fs.existsSync(path.join(absDir, ".memory"))) {
+      fs.mkdirSync(path.join(absDir, ".memory"), { recursive: true });
+    }
+
+    fs.writeFileSync(outputPath, html);
+    ok(`Dashboard saved to ${outputPath}`);
+
+    if (options?.open) {
+      const { exec } = require("child_process");
+      exec(`open "${outputPath}"`);
+    }
+    return;
+  }
+
+  // CLI output
+  heading("Context Dashboard");
+
+  console.log(`  ${c.bold}Project:${c.reset} ${path.basename(absDir)}\n`);
+
+  // Token summary
+  console.log(`  ${c.bold}${c.cyan}Total Context${c.reset}`);
+  console.log(`  ${c.bold}${formatTokens(metrics.summary.totalTokens)}${c.reset} estimated tokens\n`);
+
+  const maxTokens = Math.max(metrics.summary.tier1Tokens, metrics.summary.tier2Tokens, 1);
+
+  console.log(`  ${c.blue}Tier 1${c.reset} CLAUDE.md (auto-loaded)`);
+  console.log(`  ${asciiBar(metrics.summary.tier1Tokens, maxTokens, 30)} ${formatTokens(metrics.summary.tier1Tokens)}`);
+  console.log(`  ${c.dim}${metrics.claudeMd.lines} lines, ${metrics.claudeMd.memoryBlockLines} in memory block${c.reset}\n`);
+
+  console.log(`  ${c.green}Tier 2${c.reset} .memory/state.json (searchable)`);
+  console.log(`  ${asciiBar(metrics.summary.tier2Tokens, maxTokens, 30)} ${formatTokens(metrics.summary.tier2Tokens)}`);
+  console.log(`  ${c.dim}${metrics.memoryStore.activeMemories} active, ${metrics.memoryStore.archivedMemories} archived, ${metrics.memoryStore.supersededMemories} superseded${c.reset}\n`);
+
+  // Memory by type
+  if (Object.keys(metrics.memoryStore.byType).length > 0) {
+    console.log(`  ${c.bold}Memories by Type${c.reset}`);
+    const typeOrder = ["architecture", "decision", "pattern", "gotcha", "progress", "context"];
+    const typeColors: Record<string, string> = {
+      architecture: c.blue,
+      decision: c.red,
+      pattern: c.green,
+      gotcha: c.yellow,
+      progress: c.magenta,
+      context: c.cyan,
+    };
+
+    for (const type of typeOrder) {
+      const data = metrics.memoryStore.byType[type];
+      if (data) {
+        const color = typeColors[type] || c.gray;
+        const bar = asciiBar(data.tokens, metrics.summary.tier2Tokens || 1, 20);
+        console.log(`  ${color}${type.padEnd(12)}${c.reset} ${bar} ${data.count.toString().padStart(3)} memories (${formatTokens(data.tokens)})`);
+      }
+    }
+    console.log("");
+  }
+
+  // Snapshots
+  console.log(`  ${c.bold}Git Snapshots${c.reset}`);
+  if (metrics.snapshots.enabled) {
+    console.log(`  ${c.green}●${c.reset} Enabled on ${c.cyan}${metrics.snapshots.branch}${c.reset}`);
+    console.log(`  ${c.bold}${metrics.snapshots.totalCommits}${c.reset} commits${metrics.snapshots.remote ? ` → ${metrics.snapshots.remote}` : " (local)"}`);
+    if (metrics.snapshots.latestCommit) {
+      console.log(`  ${c.dim}Latest: ${metrics.snapshots.latestCommit} (${metrics.snapshots.latestDate})${c.reset}`);
+    }
+  } else {
+    console.log(`  ${c.yellow}○${c.reset} Disabled`);
+    console.log(`  ${c.dim}Run 'memory-mcp snapshot-enable' to enable${c.reset}`);
+  }
+
+  console.log(`\n  ${c.dim}Use 'memory-mcp context --html' to generate a visual dashboard${c.reset}\n`);
+}
+
 // --- Help ---
 
 function printHelp() {
@@ -645,6 +730,7 @@ ${c.bold}COMMANDS${c.reset}
   ${c.cyan}ask${c.reset} <question> [dir]    Ask a question, get answer from memory
   ${c.cyan}consolidate${c.reset} [dir]       Merge duplicates, prune stale memories
   ${c.cyan}key${c.reset} [api-key]           Set or check Anthropic API key
+  ${c.cyan}context${c.reset} [dir] [--html]  Show context metrics and token usage
   ${c.cyan}snapshots${c.reset} [dir]         List git snapshot history
   ${c.cyan}snapshot-enable${c.reset} [dir]   Enable git snapshots (after git init)
   ${c.cyan}snapshot-disable${c.reset} [dir]  Disable git snapshots
@@ -701,6 +787,11 @@ async function main() {
       return cmdConsolidate(args[1]);
     case "key":
       return cmdKey(args[1]);
+    case "context":
+      const htmlFlag = args.includes("--html");
+      const openFlag = args.includes("--open");
+      const contextDir = args.find(a => !a.startsWith("--") && a !== "context");
+      return cmdContext(contextDir, { html: htmlFlag, open: openFlag });
     case "snapshots":
       return cmdSnapshots(args[1]);
     case "snapshot-enable":

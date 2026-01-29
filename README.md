@@ -116,12 +116,50 @@ That's it. Start a Claude Code session and memories will begin accumulating auto
 memory-mcp setup              Interactive first-time setup
 memory-mcp init [dir]          Initialize memory for a project
 memory-mcp status [dir]        Show memory status and health
+memory-mcp context [dir]       Show context metrics and token usage
+memory-mcp context --html      Generate visual HTML dashboard
 memory-mcp search <query>      Search memories by keyword
 memory-mcp ask <question>      Ask a question, get answer from memory
 memory-mcp consolidate [dir]   Merge duplicates, prune stale memories
 memory-mcp key [api-key]       Set or check Anthropic API key
+memory-mcp snapshots [dir]     List git snapshot history
+memory-mcp snapshot-enable     Enable automatic git snapshots
+memory-mcp snapshot-disable    Disable git snapshots
 memory-mcp help                Show help
 ```
+
+## Context Dashboard
+
+Visualize your memory usage with `memory-mcp context`:
+
+```
+Context Dashboard
+
+  Project: my-app
+
+  Total Context
+  2.8K estimated tokens
+
+  Tier 1 CLAUDE.md (auto-loaded)
+  █████████████████░░░░░░░░░░░░░ 1.0K
+  45 lines, 44 in memory block
+
+  Tier 2 .memory/state.json (searchable)
+  ██████████████████████████████ 1.8K
+  29 active, 5 archived, 24 superseded
+
+  Memories by Type
+  architecture ███░░░░░░░░░░░░░░░░░   8 memories (291 tokens)
+  decision     ██████░░░░░░░░░░░░░░  18 memories (540 tokens)
+  gotcha       ████░░░░░░░░░░░░░░░░  10 memories (332 tokens)
+  progress     ██████░░░░░░░░░░░░░░  19 memories (538 tokens)
+
+  Git Snapshots
+  ● Enabled on __memory-snapshots
+  42 commits → origin
+```
+
+Use `memory-mcp context --html` to generate an interactive browser dashboard.
 
 ## MCP Tools (used by Claude mid-conversation)
 
