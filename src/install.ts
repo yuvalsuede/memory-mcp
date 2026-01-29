@@ -52,7 +52,8 @@ if (apiKey) {
 
 // --- Hook Config ---
 
-const hookCommand = `node ${extractorPath}`;
+// Quote path to handle spaces (e.g., "Application Support" on macOS)
+const hookCommand = `node "${extractorPath}"`;
 const hookEntry = {
   hooks: [{ type: "command", command: hookCommand, timeout: 30 }],
 };

@@ -93,8 +93,9 @@ function installHooks(settingsPath: string): { added: number } {
 
   if (!settings.hooks) settings.hooks = {};
 
+  // Quote path to handle spaces (e.g., "Application Support" on macOS)
   const hookEntry = {
-    hooks: [{ type: "command", command: `node ${EXTRACTOR_PATH}`, timeout: 30 }],
+    hooks: [{ type: "command", command: `node "${EXTRACTOR_PATH}"`, timeout: 30 }],
   };
 
   let added = 0;
